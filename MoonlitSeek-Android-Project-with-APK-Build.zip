@@ -1,0 +1,43 @@
+name: Build Moonlit Seek APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Extract Project ZIP
+        run: |
+          mkdir extracted
+          unzip -q MoonlitSeek-Android-Project-with-APK-Build.zip -d extracted
+          find extracted -name settings.gradle
+
+      - name: Build APK
+        run: |
+          cd "$(dirname "$(find extracted -name settings.gradle -type f | head -n 1)")"
+          gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moonlit-Seek-APK
+          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
